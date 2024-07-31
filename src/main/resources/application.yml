@@ -1,0 +1,6 @@
+#spring:
+#  data:
+#    mongodb:
+#      uri : mongodb+srv://shubhamsurana1300:TMa4vTnmJSZR00eD@cluster0.xuujzgh.mongodb.net/?retryWrites=true&w=majority
+#      database: journaldb
+#      auto-index-creation: true
