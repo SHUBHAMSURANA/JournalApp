@@ -1,7 +1,10 @@
 package net.engineeringdigest.journalApp.contoller;
 
+import net.engineeringdigest.journalApp.api.response.WeathertResponse;
 import net.engineeringdigest.journalApp.entity.User;
+import net.engineeringdigest.journalApp.service.EmailService;
 import net.engineeringdigest.journalApp.service.UserService;
+import net.engineeringdigest.journalApp.service.WeatherService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -18,9 +21,19 @@ public class UserController {
     @Autowired
     private UserService userService;
 
+    @Autowired
+    private WeatherService weatherService;
+
+    @Autowired
+    EmailService emailService;
+
     @GetMapping
     public List<User> getAll() {
-        System.out.println("coming to here ******************3");
+//        System.out.println("coming to here ******************3");
+//        String to = "sictlove99@gmail.com";
+//        String subject ="Testing Java mail sender";
+//        String text ="Hi, aap kaise hain ?";
+//        //emailService.sendEmail(to,subject,text);
         return userService.getallEntry();
     }
 
@@ -73,4 +86,17 @@ public class UserController {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
     }
+
+    @GetMapping("/greetings")
+    public ResponseEntity<?> greeting() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String userName = authentication.getName();
+        WeathertResponse weathertResponse = weatherService.getWeather("Mumbai");
+        String greeting = "inside iff";
+        if (weathertResponse != null) {
+            greeting = "Weather feels like " + "min temp " + weathertResponse.getMain().getFeelsLike();
+       }
+        return new ResponseEntity<>("hi good "+ userName + greeting, HttpStatus.OK);
+    }
+
 }

@@ -4,28 +4,32 @@ import net.engineeringdigest.journalApp.entity.JournalEntry;
 import net.engineeringdigest.journalApp.entity.User;
 import net.engineeringdigest.journalApp.service.JournalEntryService;
 import net.engineeringdigest.journalApp.service.UserService;
-import org.bson.types.ObjectId;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Optional;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/journaluser")
 public class JournalUserController {
 
-    @Autowired
-    private JournalEntryService journalEntryService;
 
-    @Autowired
+    private JournalEntryService journalEntryService;
     private UserService userService;
 
-    @GetMapping("{userName}")
-    public ResponseEntity<?> getAllJournalentryofuser(@PathVariable String userName) {
+    public JournalUserController(JournalEntryService journalEntryService, UserService userService) {
+        this.journalEntryService = journalEntryService;
+        this.userService = userService;
+    }
+
+    @GetMapping()
+    public ResponseEntity<?> getAllJournalentryofuser() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String userName = authentication.getName();
         User user = userService.findByUserNamee(userName);
         if (user != null) {
             List<JournalEntry> list = user.getJournalEntries();
@@ -37,15 +41,45 @@ public class JournalUserController {
         return new ResponseEntity<>(HttpStatus.NOT_FOUND);
     }
 
-    @PostMapping("{userName}")
-    public ResponseEntity<JournalEntry> createEntry (@RequestBody JournalEntry x, @PathVariable String userName) {
+    @PostMapping()
+    public ResponseEntity<JournalEntry> createEntry (@RequestBody JournalEntry x) {
         try {
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            String userName = authentication.getName();
             journalEntryService.saveEntryByUser(x,userName);
             return new ResponseEntity<>(x,HttpStatus.CREATED);
+
         }
         catch (Exception e) {
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         }
     }
 
+    @PutMapping
+    public ResponseEntity<JournalEntry> updateEntry (@RequestBody JournalEntry x) {
+        try {
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            String userName = authentication.getName();
+            User user = userService.findByUserNamee(userName);
+            if (user != null) {
+                List<JournalEntry> list = user.getJournalEntries();
+                if (list != null && !list.isEmpty()) {
+                    list.stream()
+                            .filter(l->l.getTitle().equals(x.getTitle()))
+                            .peek(l -> System.out.println(l.getTitle()))
+                            .forEach(l -> {
+                                l.setContent(x.getContent());
+                                journalEntryService.saveEntry(l);
+                            });
+                    user.setJournalEntries(list);
+                    userService.saveEntry(user);
+                    return new ResponseEntity<>(x,HttpStatus.CREATED);
+                }
+            }
+            return new ResponseEntity<>(x,HttpStatus.NOT_FOUND);
+        }
+        catch (Exception e) {
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        }
+    }
 }
